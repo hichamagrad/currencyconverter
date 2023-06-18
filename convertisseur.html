@@ -24,6 +24,7 @@
         h1 {
             text-align: center;
             margin-top: 0;
+            color: #333;
         }
 
         form {
@@ -48,15 +49,16 @@
             width: 100%;
             padding: 10px;
             border: none;
-            background-color:red;
+            background-color: red;
             color: #fff;
             font-weight: bold;
             cursor: pointer;
             border-radius: 4px;
+            transition: background-color 0.3s ease;
         }
 
         input[type="submit"]:hover {
-            background-color:black;
+            background-color: black;
         }
 
         p.result {
@@ -71,91 +73,7 @@
     <div class="container">
         <h1>Currency Converter</h1>
 
-        <?php
-        
-        
-        $servername = "localhost";
-        $username = "root";
-        $password = "";
-        $dbname = "convertisseur_devises";
-        
-        // Create a new connection
-        $conn = new mysqli($servername, $username, $password, $dbname,3307);
-        
-        // Check the connection
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
-        
-        
-        
-
-        // Retrieve the exchange rates from the database
-        $sql = "SELECT * FROM currency";
-        $result = $conn->query($sql);
-
-        // Initialize variables for exchange rates
-        $usd_to_eur = 0;
-        $usd_to_gbp = 0;
-        $usd_to_mad = 0;
-
-        if ($result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                if ($row["name"] === "EUR") {
-                    $usd_to_eur = $row["taux"];
-                } elseif ($row["name"] === "GBP") {
-                    $usd_to_gbp = $row["taux"];
-                } elseif ($row["name"] === "MAD") {
-                    $usd_to_mad = $row["taux"];
-                }
-            }
-        }
-
-        // Close the database connection
-        $conn->close();
-
-        // Check if the form is submitted
-        if ($_SERVER["REQUEST_METHOD"] == "POST") {
-            // Get the form data
-            $amount = $_POST["amount"];
-            $from_currency = $_POST["from_currency"];
-            $to_currency = $_POST["to_currency"];
-
-            // Convert the amount to the desired currency
-            $converted_amount = 0;
-
-            if ($from_currency === "USD") {
-                if ($to_currency === "EUR") {
-                    $converted_amount = $amount * $usd_to_eur;
-                } elseif ($to_currency === "GBP") {
-                    $converted_amount = $amount * $usd_to_gbp;
-                } elseif ($to_currency === "MAD") {
-                    $converted_amount = $amount * $usd_to_mad;
-                }
-            } elseif ($from_currency === "EUR") {
-                // Conversion rates for EUR to other currencies (not provided in this example)
-                // Add the conversion logic here
-            } elseif ($from_currency === "GBP") {
-                // Conversion rates for GBP to other currencies (not provided in this example)
-                // Add the conversion logic here
-            } elseif ($from_currency === "MAD") {
-                if ($to_currency === "USD") {
-                    $converted_amount = $amount / $usd_to_mad;
-                } elseif ($to_currency === "EUR") {
-                    // Conversion rate for MAD to EUR (not provided in this example)
-                    // Add the conversion logic here
-                } elseif ($to_currency === "GBP") {
-                    // Conversion rate for MAD to GBP (not provided in this example)
-                    // Add the conversion logic here
-                }
-            }
-
-            // Display the result
-            echo "<p class='result'>Converted Amount: $converted_amount $to_currency</p>";
-        }
-        ?>
-
-        <form method="POST" action="">
+        <form method="POST" action="convert.php">
             <label for="amount">Amount:</label>
             <input type="number" step="0.01" name="amount" required><br><br>
 
@@ -168,7 +86,7 @@
             </select><br><br>
 
             <label for="to_currency">To Currency:</label>
-            <select name="to_currency" required> <br>
+            <select name="to_currency" required>
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
                 <option value="GBP">GBP</option>
@@ -177,5 +95,40 @@
 
             <input type="submit" value="Convert">
         </form>
+
+        <div id="result">
+            <!-- The converted amount will be displayed here -->
+        </div>
     </div>
+
+    <script>
+        // Handle form submission
+        document.querySelector("form").addEventListener("submit", function (event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Create an AJAX request
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "convert.php", true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        // Prepare the form data
+        var formData = new FormData(event.target);
+
+        // Define the callback function for the AJAX request
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+
+                // Update the result div
+                var resultDiv = document.getElementById("result");
+                resultDiv.innerHTML = "<p class='result'>Converted Amount: " + response.converted_amount + " " + response.to_currency + "</p>";
+            }
+        };
+
+        // Send the AJAX request with the form data
+        xhr.send(formData);
+        });
+
+    </script>
 </body>
+</html>
